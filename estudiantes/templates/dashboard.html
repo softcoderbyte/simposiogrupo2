@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Estudiantes</title>
+
+        <script src="https://cdn.tailwindcss.com"></script>
+ 
+    
+    
+</head>
+<body>
+    <h1>Lista de Estudiantes</h1>
+    <button onclick="document.getElementById('addStudentModal').classList.remove('hidden')" class="bg-green-500 text-white p-2 rounded mb-4">Agregar Estudiante</button>
+    <table class="w-full border-collapse border border-gray-300">
+        <thead class="bg-gray-200">
+            <tr>
+                <th class="border p-2">ID</th>
+                <th class="border p-2">Carnet</th>
+                <th class="border p-2">Nombre</th>
+                <th class="border p-2">Teléfono</th>
+                <th class="border p-2">Email</th>
+                <th class="border p-2">Pagado</th>
+                <th class="border p-2">Fecha de Registro</th>
+                <th class="border p-2">Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="studentTableBody">
+    </table>
+
+    <div id="addStudentModal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
+    <div class="bg-white p-6 rounded-md w-96">
+        <h2 class="text-xl font-bold mb-4">Agregar Estudiante</h2>
+        <form id="addStudentForm" onsubmit="event.preventDefault(); addEstudiante();">
+            <!-- Grupo Carnet -->
+            <div class="grid grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label for="carnetcarrera" class="block text-sm">Carnet Carrera</label>
+                    <input type="number" name="carnetcarrera" class="border p-2 w-full" required>
+                </div>
+                <div>
+                    <label for="carnetanio" class="block text-sm">Carnet Año</label>
+                    <input type="number" name="carnetanio" class="border p-2 w-full" required>
+                </div>
+                <div>
+                    <label for="carnetcorrelativo" class="block text-sm">Carnet Correlativo</label>
+                    <input type="number" name="carnetcorrelativo" class="border p-2 w-full" required>
+                </div>
+            </div>
+
+            <!-- Grupo Nombres y Apellidos -->
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="nombre1" class="block text-sm">Nombre 1</label>
+                    <input type="text" name="nombre1" class="border p-2 w-full" required>
+                </div>
+                <div>
+                    <label for="nombre2" class="block text-sm">Nombre 2</label>
+                    <input type="text" name="nombre2" class="border p-2 w-full">
+                </div>
+                <div>
+                    <label for="apellido1" class="block text-sm">Apellido 1</label>
+                    <input type="text" name="apellido1" class="border p-2 w-full" required>
+                </div>
+                <div>
+                    <label for="apellido2" class="block text-sm">Apellido 2</label>
+                    <input type="text" name="apellido2" class="border p-2 w-full">
+                </div>
+            </div>
+
+            <!-- Resto del formulario -->
+            <div class="mb-4">
+                <label for="telefono" class="block text-sm">Teléfono</label>
+                <input type="text" name="telefono" class="border p-2 w-full" required>
+            </div>
+            <div class="mb-4">
+                <label for="correo" class="block text-sm">Correo</label>
+                <input type="email" name="correo" class="border p-2 w-full" required>
+            </div>
+            <div class="mb-4">
+                <label for="pagado" class="block text-sm">¿Pagado?</label>
+                <input type="checkbox" name="pagado">
+            </div>
+            
+            <!-- Botones de Acción -->
+            <div class="flex justify-between">
+                <button type="submit" class="bg-blue-500 text-white p-2 rounded">Guardar</button>
+                <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="bg-gray-500 text-white p-2 rounded">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Editar Estudiante -->
+<div id="editStudentModal" class="modal hidden">
+    <div class="modal-content">
+        <h2>Editar Estudiante</h2>
+        <form id="editStudentForm">
+            <input type="hidden" id="editStudentId">
+            <label>Carnet Carrera:</label>
+            <input type="text" id="editCarnetCarrera" disabled><br>
+
+            <label>Nombre 1:</label>
+            <input type="text" id="editNombre1" required><br>
+
+            <label>Nombre 2:</label>
+            <input type="text" id="editNombre2"><br>
+
+            <label>Apellido 1:</label>
+            <input type="text" id="editApellido1" required><br>
+
+            <label>Apellido 2:</label>
+            <input type="text" id="editApellido2"><br>
+
+            <label>Teléfono:</label>
+            <input type="text" id="editTelefono" required><br>
+
+            <label>Correo:</label>
+            <input type="email" id="editCorreo" required><br>
+
+            <label>Pagado:</label>
+            <input type="checkbox" id="editPagado"><br>
+
+            <button type="button" onclick="updateEstudiante()">Guardar Cambios</button>
+            <button type="button" onclick="closeEditModal()">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+    <script>
+        const apiUrl = "http://localhost:8000/api/estudiantes/";
+        
+        function openModal() {
+            document.getElementById('addStudentModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('addStudentModal').classList.add('hidden');
+        }
+
+        // Función para agregar un nuevo estudiante
+        async function addEstudiante() {
+            const formData = new FormData(document.getElementById('addStudentForm'));
+            const data = {
+                carnetcarrera: formData.get('carnetcarrera'),
+                carnetanio: formData.get('carnetanio'),
+                carnetcorrelativo: formData.get('carnetcorrelativo'),
+                nombre1: formData.get('nombre1'),
+                nombre2: formData.get('nombre2') || '', // Si el campo es opcional, poner una cadena vacía
+                apellido1: formData.get('apellido1'),
+                apellido2: formData.get('apellido2') || '',
+                telefono: formData.get('telefono'),
+                correo: formData.get('correo'),
+                pagado: formData.get('pagado') ? true : false, // Convertir a booleano
+                fecharegistro: new Date().toISOString() // Generar la fecha actual
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('Estudiante agregado exitosamente');
+                document.getElementById('addStudentModal').classList.add('hidden');
+                document.getElementById('addStudentForm').reset();
+                getEstudiantes(); // Recargar la lista
+            } else {
+                alert('Error al agregar el estudiante');
+            }
+        }
+
+        async function getEstudiantes() {
+            const response = await fetch(apiUrl);
+            const estudiantes = await response.json();
+            const tableBody = document.querySelector('#studentTableBody');
+            tableBody.innerHTML = ""; // Limpiar tabla
+
+            estudiantes.forEach(estudiante => {
+                const row = document.createElement('tr');
+                row.classList.add("hover:bg-gray-100");
+                row.innerHTML = `
+                    <td class="border p-2">${estudiante.id}</td>
+                    <td class="border p-2">${estudiante.carnetcarrera}-${estudiante.carnetanio}-${estudiante.carnetcorrelativo}</td>
+                    <td class="border p-2">${estudiante.nombre1} ${estudiante.nombre2} ${estudiante.apellido1} ${estudiante.apellido2}</td>
+                    <td class="border p-2">${estudiante.telefono}</td>
+                    <td class="border p-2">${estudiante.correo}</td>
+                    <td class="border p-2 text-center">
+                        ${estudiante.pagado ? '<span class="text-green-600 font-bold">✔</span>' : '<span class="text-red-600 font-bold">✖</span>'}
+                    </td>
+                    <td class="border p-2">${new Date(estudiante.fecharegistro).toLocaleString()}</td>
+                    <td class="border p-2">
+                        <button class="bg-yellow-500 text-white p-2 rounded" onclick="editEstudiante(${estudiante.id})">Editar</button>
+                        <button class="bg-red-500 text-white p-2 rounded" onclick="deleteEstudiante(${estudiante.id})">Eliminar</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Función para eliminar un estudiante
+        async function deleteEstudiante(id) {
+            const response = await fetch(`${apiUrl}${id}/`, { method: 'DELETE' });
+            if (response.ok) {
+                alert('Estudiante eliminado exitosamente');
+                getEstudiantes(); // Recargar la lista
+            } else {
+                alert('Error al eliminar el estudiante');
+            }
+        }
+
+        function editEstudiante(id) {
+            fetch(`${apiUrl}/${id}`)
+                .then(response => response.json())
+                .then(estudiante => {
+                    document.getElementById('editStudentId').value = estudiante.id;
+                    document.getElementById('editCarnetCarrera').value = estudiante.carnetCarrera;
+                    document.getElementById('editNombre1').value = estudiante.nombre1;
+                    document.getElementById('editNombre2').value = estudiante.nombre2 || '';
+                    document.getElementById('editApellido1').value = estudiante.apellido1;
+                    document.getElementById('editApellido2').value = estudiante.apellido2 || '';
+                    document.getElementById('editTelefono').value = estudiante.telefono;
+                    document.getElementById('editCorreo').value = estudiante.correo;
+                    document.getElementById('editPagado').checked = estudiante.pagado;
+        
+                    document.getElementById('editStudentModal').classList.remove('hidden'); // Mostrar modal
+                })
+                .catch(error => console.error('Error al cargar datos del estudiante:', error));
+        }       
+        
+        async function updateEstudiante() {
+            const id = document.getElementById('editStudentId').value;
+            const data = {
+                nombre1: document.getElementById('editNombre1').value,
+                nombre2: document.getElementById('editNombre2').value || '',
+                apellido1: document.getElementById('editApellido1').value,
+                apellido2: document.getElementById('editApellido2').value || '',
+                telefono: document.getElementById('editTelefono').value,
+                correo: document.getElementById('editCorreo').value,
+                pagado: document.getElementById('editPagado').checked
+            };
+        
+            const response = await fetch(`${apiUrl}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+        
+            if (response.ok) {
+                alert('Estudiante actualizado correctamente');
+                document.getElementById('editStudentModal').classList.add('hidden'); // Cerrar modal
+                getEstudiantes(); // Recargar la tabla
+            } else {
+                alert('Error al actualizar el estudiante');
+            }
+        }
+        
+
+        // Cargar estudiantes al cargar la página
+        document.addEventListener('DOMContentLoaded', getEstudiantes);
+        
+    </script>
+    
+</body>
+</html>
